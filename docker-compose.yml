@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: censys-db
+    environment:
+      POSTGRES_USER: censys
+      POSTGRES_PASSWORD: censys_dev_password
+      POSTGRES_DB: censys
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U censys -d censys"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - censys-network
+
+  # Go API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: censys-api
+    environment:
+      DATABASE_URL: postgres://censys:censys_dev_password@postgres:5432/censys?sslmode=disable&search_path=censys
+      SERVER_PORT: 8080
+      APP_URL: http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - censys-network
+    restart: unless-stopped
+
+  # React Web App (development)
+  web:
+    image: node:18-alpine
+    container_name: censys-web
+    working_dir: /app
+    environment:
+      REACT_APP_API_URL: http://api:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm start"
+    networks:
+      - censys-network
+    restart: unless-stopped
+
+  # Asset Simulator
+  simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    container_name: censys-simulator
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+    networks:
+      - censys-network
+    restart: unless-stopped
+
+networks:
+  censys-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

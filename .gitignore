@@ -1,0 +1,38 @@
+# Binaries
+censys
+censys-server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+*.test
+*.out
+vendor/
+go.work
+
+# Environment files
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Swagger generated docs
+docs/

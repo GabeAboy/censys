@@ -1,0 +1,20 @@
+FROM golang:1.26 AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o simulator cmd/simulator/main.go
+
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /app/simulator .
+
+CMD ["./simulator"]

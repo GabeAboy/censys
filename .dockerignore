@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Development files
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# Web app (built separately)
+web/node_modules
+web/build
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Temporary files
+tmp/
+temp/
