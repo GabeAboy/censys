@@ -31,13 +31,16 @@ var (
 func main() {
 	log.Println("Starting Asset Simulator...")
 
+	// Sleep for 30 seconds to allow server to start
+	log.Println("Waiting for 30 seconds for server to start...")
+	time.Sleep(30 * time.Second)
 	// Get API URL from environment variable or use default
 	apiBaseURL := os.Getenv("API_URL")
 	if apiBaseURL == "" {
 		apiBaseURL = "http://localhost:8080"
 	}
 	apiURL := fmt.Sprintf("%s/api/v1/assets", apiBaseURL)
-	
+
 	log.Printf("Using API URL: %s", apiURL)
 
 	// Check asset count and create initial batch if needed
