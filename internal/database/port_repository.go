@@ -2,6 +2,7 @@ package database
 
 import (
 	"censys/pkg/models"
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -16,14 +17,14 @@ func NewPortRepository(db *DB) *PortRepository {
 	return &PortRepository{db: db}
 }
 
-func (r *PortRepository) Create(tx *sql.Tx, assetID *models.AssetId, ports []models.Port) error {
+func (r *PortRepository) Create(ctx context.Context, tx *sql.Tx, assetID *models.AssetId, ports []models.Port) error {
 	query := `
 			INSERT INTO ports (asset_id, port_number, created_at)
 			VALUES ($1, $2, NOW())
 	`
 
 	for _, port := range ports {
-		_, err := tx.Exec(query, assetID, port.PortNumber)
+		_, err := tx.ExecContext(ctx, query, assetID, port.PortNumber)
 		if err != nil {
 			pqErr, _ := err.(*pq.Error)
 			if pqErr.Constraint == models.UniqueAssetPort {

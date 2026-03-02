@@ -45,23 +45,31 @@ func (h *AssetHandler) GetAssetList(c *gin.Context) {
 		return
 	}
 
-	// Parse comma-separated risk levels
+	ctx := c.Request.Context()
+
+	// Sanitize search parameter
+	search := sanitizeSearch(req.Search)
+
+	// Parse and validate risk levels
 	riskLevels := parseRiskLevels(req.RiskLevel)
-	p := req.Page - 1
-	offset := p * req.PageSize
-	assets, totalAssets, err := h.assetService.GetAssetList(req.Search, riskLevels, offset, req.PageSize)
+
+	// Calculate pagination
+	page := req.Page
+	pageSize := req.PageSize
+	offset := (page - 1) * pageSize
+
+	assets, totalAssets, err := h.assetService.GetAssetList(ctx, search, riskLevels, offset, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve assets"})
 		return
 	}
 
-	pageSize := len(*assets)
 	response := dto.ListAssetsResponse{
 		Assets: assets,
 		Pagination: dto.Pagination{
 			Total:    totalAssets,
 			Page:     req.Page,
-			PageSize: pageSize,
+			PageSize: len(assets),
 		},
 	}
 
@@ -87,10 +95,15 @@ func (h *AssetHandler) GetAssetCount(c *gin.Context) {
 		return
 	}
 
-	// Parse comma-separated risk levels
+	ctx := c.Request.Context()
+
+	// Sanitize search parameter
+	search := sanitizeSearch(req.Search)
+
+	// Parse and validate risk levels
 	riskLevels := parseRiskLevels(req.RiskLevel)
 
-	totalAssets, err := h.assetService.GetAssetCount(req.Search, riskLevels)
+	totalAssets, err := h.assetService.GetAssetCount(ctx, search, riskLevels)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve asset count"})
 		return
@@ -117,7 +130,9 @@ func (h *AssetHandler) CreateAsset(c *gin.Context) {
 		return
 	}
 
-	err := h.assetService.CreateAsset(req)
+	ctx := c.Request.Context()
+
+	err := h.assetService.CreateAsset(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create asset"})
 		return
@@ -138,8 +153,9 @@ func (h *AssetHandler) CreateAsset(c *gin.Context) {
 // @Router /assets/{id} [delete]
 func (h *AssetHandler) DeleteAsset(c *gin.Context) {
 	assetID := c.Param("id")
+	ctx := c.Request.Context()
 
-	if err := h.assetService.DeleteAsset(assetID); err != nil {
+	if err := h.assetService.DeleteAsset(ctx, assetID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete asset"})
 		return
 	}
@@ -168,7 +184,9 @@ func (h *AssetHandler) CreateAssetTag(c *gin.Context) {
 		return
 	}
 
-	if err := h.assetService.CreateAssetTag(assetID, req); err != nil {
+	ctx := c.Request.Context()
+
+	if err := h.assetService.CreateAssetTag(ctx, assetID, req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add tag"})
 		return
 	}
@@ -176,20 +194,38 @@ func (h *AssetHandler) CreateAssetTag(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Tag added successfully"})
 }
 
+// sanitizeSearch sanitizes the search parameter
+func sanitizeSearch(search string) string {
+	// Trim whitespace
+	search = strings.TrimSpace(search)
+
+	// Limit length to prevent DoS
+	const maxSearchLength = 100
+	if len(search) > maxSearchLength {
+		search = search[:maxSearchLength]
+	}
+
+	return search
+}
+
 // parseRiskLevels parses a comma-separated string of risk levels into a slice
-func parseRiskLevels(riskLevelStr string) []*models.RiskLevel {
+func parseRiskLevels(riskLevelStr string) []models.RiskLevel {
 	if riskLevelStr == "" {
-		return nil
+		return []models.RiskLevel{
+			models.RiskLevelLow,
+			models.RiskLevelMedium,
+			models.RiskLevelHigh,
+		}
 	}
 
 	parts := strings.Split(riskLevelStr, ",")
-	riskLevels := make([]*models.RiskLevel, 0, len(parts))
+	riskLevels := make([]models.RiskLevel, 0, len(parts))
 
 	for _, part := range parts {
 		trimmed := strings.TrimSpace(part)
 		if trimmed != "" {
 			riskLevel := models.RiskLevel(trimmed)
-			riskLevels = append(riskLevels, &riskLevel)
+			riskLevels = append(riskLevels, riskLevel)
 		}
 	}
 

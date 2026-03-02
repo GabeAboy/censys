@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -26,8 +27,8 @@ func NewDB(connectionString string) (*DB, error) {
 	return &DB{db}, nil
 }
 
-func (db *DB) BeginTx() (*sql.Tx, error) {
-	return db.Begin()
+func (db *DB) BeginTx(ctx context.Context) (*sql.Tx, error) {
+	return db.DB.BeginTx(ctx, nil)
 }
 
 func (db *DB) InitSchema() error {

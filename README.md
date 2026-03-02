@@ -2,21 +2,31 @@
 
 A modern asset management system for tracking network assets, open ports, and risk levels. Built with Go, PostgreSQL, and React.
 
-## 🏗️ Architecture
+## Testing Instructions
+
+1. Start the service: `make up`
+2. Open a browser and navigate to `http://localhost:3000` and `http://localhost:8080/swagger/index.html#/`
+3. Click the "Add Asset" button and enter a new asset information
+4. Click the "Search" button and enter the asset information you just entered
+5. Verify that the new asset is displayed in the search results
+6. Click the "Delete" button next to the new asset
+7. Click the "Search" button again and verify that the new asset is no longer displayed in the search results
+
+## Architecture
 
 - **Backend**: Go 1.26 with Gin web framework
 - **Database**: PostgreSQL 15
 - **Frontend**: React with Tailwind CSS
 - **Containerization**: Docker & Docker Compose
 
-## 📋 Prerequisites
+## Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running
-- [Make](https://www.gnu.org/software/make/) (optional, for convenience commands)
-- [Go 1.26+](https://go.dev/dl/) (only if running locally without Docker)
-- [Node.js 18+](https://nodejs.org/) (only if running frontend locally)
+- [Make]
+- [Docker]
+- [Go 1.26+]
+- [Node.js 18+]
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Using Docker (Recommended)
 
@@ -54,9 +64,10 @@ A modern asset management system for tracking network assets, open ports, and ri
 go mod download
 
 # Run the server
-go run main.go
-```
 
+go run main.go
+
+```
 The API will start on http://localhost:8080
 
 #### 3. Frontend Setup

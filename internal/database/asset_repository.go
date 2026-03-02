@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -17,14 +18,14 @@ func NewAssetRepository(db *DB) *AssetRepository {
 	return &AssetRepository{db: db}
 }
 
-func (r *AssetRepository) Create(tx *sql.Tx, asset *models.Asset) (*models.AssetId, error) {
+func (r *AssetRepository) Create(ctx context.Context, tx *sql.Tx, asset *models.Asset) (*models.AssetId, error) {
 	query := `
 		INSERT INTO assets (ip_address, hostname, risk_level, created_at)
 		VALUES ($1, $2, $3, NOW())
 		RETURNING id`
 
 	var assetId models.AssetId
-	err := tx.QueryRow(query, asset.IPAddress, asset.Hostname, asset.RiskLevel).Scan(&assetId)
+	err := tx.QueryRowContext(ctx, query, asset.IPAddress, asset.Hostname, asset.RiskLevel).Scan(&assetId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create asset: %w", err)
 	}
@@ -33,7 +34,7 @@ func (r *AssetRepository) Create(tx *sql.Tx, asset *models.Asset) (*models.Asset
 }
 
 // TODO This query should also include ports that aren't in the filter set
-func (r *AssetRepository) GetAll(searchText *string, riskLevels []*models.RiskLevel, limit int, offset int) ([]models.Asset, error) {
+func (r *AssetRepository) GetAll(ctx context.Context, searchText string, riskLevels []models.RiskLevel, limit int, offset int) ([]models.Asset, error) {
 	query := `
 		SELECT
 			a.id,
@@ -58,7 +59,11 @@ func (r *AssetRepository) GetAll(searchText *string, riskLevels []*models.RiskLe
 		LIMIT $3 OFFSET $4
 	`
 
-	rows, err := r.db.Query(query, searchText, riskLevels, limit, offset)
+	var searchParam *string
+	if searchText != "" {
+		searchParam = &searchText
+	}
+	rows, err := r.db.QueryContext(ctx, query, searchParam, riskLevels, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query assets: %w", err)
 	}
@@ -88,7 +93,7 @@ func (r *AssetRepository) GetAll(searchText *string, riskLevels []*models.RiskLe
 	return assets, nil
 }
 
-func (r *AssetRepository) GetAllCount(searchText *string, riskLevels []*models.RiskLevel) (int, error) {
+func (r *AssetRepository) GetAllCount(ctx context.Context, searchText string, riskLevels []models.RiskLevel) (int, error) {
 	query := `
 		SELECT COUNT(DISTINCT a.id)
 		FROM assets a
@@ -103,8 +108,12 @@ func (r *AssetRepository) GetAllCount(searchText *string, riskLevels []*models.R
 		AND a.risk_level = ANY($2)
 	`
 
+	var searchParam *string
+	if searchText != "" {
+		searchParam = &searchText
+	}
 	var count int
-	err := r.db.QueryRow(query, searchText, riskLevels).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query, searchParam, riskLevels).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count assets: %w", err)
 	}
@@ -112,10 +121,10 @@ func (r *AssetRepository) GetAllCount(searchText *string, riskLevels []*models.R
 	return count, nil
 }
 
-func (r *AssetRepository) Delete(id string) error {
+func (r *AssetRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM assets WHERE id = $1`
 
-	_, err := r.db.Exec(query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete asset: %w", err)
 	}
